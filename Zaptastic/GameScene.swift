@@ -39,12 +39,14 @@ class GameScene: SKScene {
     let minTilt: Double = 20.0 // 20 degrees
     let maxTilt: Double = 70.0 // 70 degrees
 
+    var mainSKView: SKView?
     var gameOverSprite: SKSpriteNode?
     var tapOnGameOverGestureRecognizer: UITapGestureRecognizer?
     
     override func didMove(to view: SKView) {
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
+        mainSKView = view
         
         if let particles = SKEmitterNode(fileNamed: "Starfield") {
             particles.position = CGPoint(x: 1080, y: 0)
@@ -109,9 +111,6 @@ class GameScene: SKScene {
                 self.updateSpritePosition(for: pitchInDegrees)
             }
         }
-        if let tapToFire = tapToFireGestureRecognizer {
-            view.addGestureRecognizer(tapToFire)
-        }
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -142,22 +141,22 @@ class GameScene: SKScene {
     }
     
     // Function to map tilt angle to vertical position of the sprite
-       func updateSpritePosition(for pitch: Double) {
-//           // Clamp the pitch to the defined range
-           let clampedPitch = min(max(pitch, minTilt), maxTilt)
-           debugPrint("clampedPitch = \(clampedPitch)")
-           
-           // Normalize the pitch value between 0.0 and 1.0
-           let normalizedPitch = (clampedPitch - minTilt) / (maxTilt - minTilt)
-           debugPrint("normalizedPitch: \(normalizedPitch)")
-
-           // Map the normalized pitch to the screen height (from bottom to top)
-           let newYPosition = CGFloat(normalizedPitch) * screenHeight
-           debugPrint("newYPosition: \(newYPosition)")
-
-           // Move the sprite vertically
-           player.position = CGPoint(x: player.position.x, y: newYPosition)
-       }
+    func updateSpritePosition(for pitch: Double) {
+        // Clamp the pitch to the defined range
+        let clampedPitch = min(max(pitch, minTilt), maxTilt)
+        debugPrint("clampedPitch = \(clampedPitch)")
+        
+        // Normalize the pitch value between 0.0 and 1.0
+        let normalizedPitch = (clampedPitch - minTilt) / (maxTilt - minTilt)
+        debugPrint("normalizedPitch: \(normalizedPitch)")
+        
+        // Map the normalized pitch to the screen height (from bottom to top)
+        let newYPosition = (CGFloat(normalizedPitch) * (screenHeight / 2)) - 20.0
+        debugPrint("newYPosition: \(newYPosition)")
+        
+        // Move the sprite vertically
+        player.position = CGPoint(x: player.position.x, y: newYPosition)
+    }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard isPlayerAlive else { return }
@@ -301,7 +300,13 @@ extension GameScene: SKPhysicsContactDelegate {
     }
     
     func startNewGame() {
-        self.view?.removeGestureRecognizer(tapOnGameOverGestureRecognizer)
+        if let tapOnGameOver = tapOnGameOverGestureRecognizer {
+            self.view?.removeGestureRecognizer(tapOnGameOver)
+        }
         self.gameOverSprite?.removeFromParent()
+        isPlayerAlive = true
+        if let mainSKView = mainSKView {
+            startGamePlay(view: mainSKView)
+        }
     }
 }
